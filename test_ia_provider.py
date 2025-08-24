@@ -21,7 +21,6 @@ from ia_provider import (
 )
 from ia_provider.openai import OpenAIProvider
 from ia_provider.anthropic import AnthropicProvider
-from ia_provider.gpt5 import GPT5Provider
 
 
 # =============================================================================
@@ -59,13 +58,17 @@ class TestProviderManager:
     """Tests pour le gestionnaire de providers."""
     
     def test_available_models(self):
-        """Test que les principaux modèles sont disponibles."""
+        """Test que seuls les 2 modèles sont disponibles."""
         models = manager.get_available_models()
-
+        
+        assert len(models) == 2
         assert "gpt-4.1" in models
-        assert "gpt-5" in models
-        assert "gpt-5-nano" in models
-        assert "claude-sonnet-4-20250514" in models
+        assert "claude-sonnet-4" in models
+        
+        # Vérifier qu'aucun autre modèle n'est présent
+        assert "gpt-4" not in models
+        assert "claude-3-opus" not in models
+        assert "gemini-pro" not in models
     
     @patch('ia_provider.openai.openai')
     def test_get_provider_gpt41(self, mock_openai):
@@ -79,10 +82,10 @@ class TestProviderManager:
     @patch('ia_provider.anthropic.anthropic')
     def test_get_provider_claude(self, mock_anthropic):
         """Test de récupération du provider Claude."""
-        provider = manager.get_provider("claude-sonnet-4-20250514", "test-key")
-
+        provider = manager.get_provider("claude-sonnet-4", "test-key")
+        
         assert isinstance(provider, AnthropicProvider)
-        assert provider.model_name == "claude-sonnet-4-20250514"
+        assert provider.model_name == "claude-sonnet-4"
         assert provider.api_key == "test-key"
     
     def test_get_provider_unknown_model(self):
@@ -215,37 +218,6 @@ class TestOpenAIProvider:
 
 
 # =============================================================================
-# Tests du provider GPT-5
-# =============================================================================
-
-class TestGPT5Provider:
-    """Tests pour le provider GPT-5."""
-
-    @patch('ia_provider.gpt5.openai')
-    def test_gpt5_nano_parameter_override(self, mock_openai):
-        """Vérifie que gpt-5-nano force les bons paramètres."""
-
-        mock_client = MagicMock()
-        mock_openai.OpenAI.return_value = mock_client
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content="Test OK"))]
-        mock_client.chat.completions.create.return_value = mock_response
-
-        provider = GPT5Provider("gpt-5-nano", "test-key")
-
-        provider.generer_reponse(
-            "Test",
-            reasoning_effort="high",
-            verbosity="high",
-            max_tokens=123,
-        )
-
-        call_kwargs = mock_client.chat.completions.create.call_args[1]
-        assert call_kwargs.get('reasoning_effort') == 'minimal'
-        assert 'max_completion_tokens' not in call_kwargs
-        assert call_kwargs.get('max_tokens') == 123
-
-# =============================================================================
 # Tests du provider Anthropic (Claude Sonnet 4)
 # =============================================================================
 
@@ -261,7 +233,7 @@ class TestAnthropicProvider:
     
     def test_thinking_parameter(self, mock_anthropic):
         """Test du support du mode thinking."""
-        provider = AnthropicProvider("claude-sonnet-4-20250514", "test-key")
+        provider = AnthropicProvider("claude-sonnet-4", "test-key")
         
         mock_response = MagicMock()
         mock_response.content = [MagicMock(text="Réponse avec thinking")]
@@ -281,7 +253,7 @@ class TestAnthropicProvider:
     
     def test_max_tokens_always_present(self, mock_anthropic):
         """Test que max_tokens est toujours ajouté."""
-        provider = AnthropicProvider("claude-sonnet-4-20250514", "test-key")
+        provider = AnthropicProvider("claude-sonnet-4", "test-key")
         
         mock_response = MagicMock()
         mock_response.content = [MagicMock(text="Test")]
@@ -296,7 +268,7 @@ class TestAnthropicProvider:
     
     def test_generer_reponse_success(self, mock_anthropic):
         """Test de génération réussie."""
-        provider = AnthropicProvider("claude-sonnet-4-20250514", "test-key")
+        provider = AnthropicProvider("claude-sonnet-4", "test-key")
         
         mock_response = MagicMock()
         mock_response.content = [MagicMock(text="Réponse Claude")]
@@ -311,12 +283,12 @@ class TestAnthropicProvider:
         assert response == "Réponse Claude"
         
         call_kwargs = provider.client.messages.create.call_args[1]
-        assert call_kwargs['model'] == "claude-sonnet-4-20250514"
+        assert call_kwargs['model'] == "claude-sonnet-4"
         assert call_kwargs['max_tokens'] == 250
     
     def test_chatter_validates_roles(self, mock_anthropic):
         """Test de validation des rôles."""
-        provider = AnthropicProvider("claude-sonnet-4-20250514", "test-key")
+        provider = AnthropicProvider("claude-sonnet-4", "test-key")
         
         invalid_messages = [{"role": "system", "content": "Test"}]
         
@@ -334,12 +306,12 @@ class TestIntegration:
     def test_both_models_registered(self):
         """Test que les deux modèles sont bien enregistrés."""
         providers_info = manager.get_providers_info()
-
+        
         assert 'OpenAIProvider' in providers_info
         assert 'AnthropicProvider' in providers_info
-
+        
         assert 'gpt-4.1' in providers_info['OpenAIProvider']
-        assert 'claude-sonnet-4-20250514' in providers_info['AnthropicProvider']
+        assert 'claude-sonnet-4' in providers_info['AnthropicProvider']
     
     @patch('ia_provider.openai.openai')
     @patch('ia_provider.anthropic.anthropic')
@@ -350,7 +322,7 @@ class TestIntegration:
         assert isinstance(provider1, OpenAIProvider)
         
         # Test Claude
-        provider2 = manager.get_provider("claude-sonnet-4-20250514", "key2")
+        provider2 = manager.get_provider("claude-sonnet-4", "key2")
         assert isinstance(provider2, AnthropicProvider)
         
         # Vérifier que ce sont bien des instances différentes
