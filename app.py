@@ -190,19 +190,29 @@ with st.sidebar:
     # Paramètres spécifiques pour GPT-5
     if selected_model.startswith("gpt-5"):
         st.markdown("### 🧠 Paramètres GPT-5")
-        
+
+        # Gérer le cas spécifique de gpt-5-nano
+        is_nano = selected_model == "gpt-5-nano"
+
+        if is_nano:
+            st.info(
+                "💡 Le modèle gpt-5-nano est optimisé pour des réponses rapides et utilise un raisonnement minimal."
+            )
+
         reasoning_effort = st.select_slider(
             "Reasoning Effort",
             options=["minimal", "low", "medium", "high"],
-            value="medium",
-            help="Niveau de raisonnement du modèle"
+            value="minimal" if is_nano else "medium",
+            help="Niveau de raisonnement du modèle",
+            disabled=is_nano
         )
-        
+
         verbosity = st.select_slider(
             "Verbosity",
             options=["low", "medium", "high"],
-            value="medium",
-            help="Niveau de détail des réponses"
+            value="low" if is_nano else "medium",
+            help="Niveau de détail des réponses",
+            disabled=is_nano
         )
         
         # Temperature seulement en mode minimal

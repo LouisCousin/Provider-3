@@ -68,6 +68,10 @@ class GPT5Provider(BaseProvider):
         # Ajouter les paramètres spécifiques à GPT-5
         params['reasoning_effort'] = kwargs.get('reasoning_effort', self.gpt5_defaults['reasoning_effort'])
         params['verbosity'] = kwargs.get('verbosity', self.gpt5_defaults['verbosity'])
+
+        # Forcer le raisonnement minimal pour gpt-5-nano
+        if self.model_name == 'gpt-5-nano':
+            params['reasoning_effort'] = 'minimal'
         
         # En mode minimal, on peut utiliser temperature et autres paramètres classiques
         if params['reasoning_effort'] == 'minimal':
