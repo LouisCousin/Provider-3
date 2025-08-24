@@ -75,15 +75,16 @@ class GPT5Provider(BaseProvider):
         
         # En mode minimal, on peut utiliser temperature et autres paramètres classiques
         if params['reasoning_effort'] == 'minimal':
-            # En mode minimal, on peut utiliser les paramètres classiques
-            if 'temperature' in kwargs:
-                params['temperature'] = kwargs['temperature']
-            if 'top_p' in kwargs:
-                params['top_p'] = kwargs['top_p']
-            if 'frequency_penalty' in kwargs:
-                params['frequency_penalty'] = kwargs['frequency_penalty']
-            if 'presence_penalty' in kwargs:
-                params['presence_penalty'] = kwargs['presence_penalty']
+            # N'ajouter ces paramètres que si le modèle n'est pas gpt-5-nano
+            if self.model_name != 'gpt-5-nano':
+                if 'temperature' in kwargs:
+                    params['temperature'] = kwargs['temperature']
+                if 'top_p' in kwargs:
+                    params['top_p'] = kwargs['top_p']
+                if 'frequency_penalty' in kwargs:
+                    params['frequency_penalty'] = kwargs['frequency_penalty']
+                if 'presence_penalty' in kwargs:
+                    params['presence_penalty'] = kwargs['presence_penalty']
         # Sinon, en mode raisonnement (low, medium, high), ces paramètres sont ignorés
         
         # Filtrer les paramètres None

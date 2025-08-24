@@ -241,12 +241,14 @@ class TestGPT5Provider:
             reasoning_effort="high",  # Doit être ignoré
             verbosity="high",
             max_tokens=123,
+            temperature=0.7  # Ce paramètre devrait être ignoré
         )
 
         call_kwargs = mock_client.chat.completions.create.call_args[1]
         assert call_kwargs.get('reasoning_effort') == 'minimal'
         assert 'max_tokens' not in call_kwargs
         assert call_kwargs.get('max_completion_tokens') == 123
+        assert 'temperature' not in call_kwargs
 
 # =============================================================================
 # Tests du provider Anthropic (Claude Sonnet 4)
