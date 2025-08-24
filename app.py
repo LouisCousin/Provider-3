@@ -123,8 +123,21 @@ def get_api_key(model_name: str) -> Optional[str]:
     
     if provider in env_map:
         return os.getenv(env_map[provider])
-    
+
     return None
+
+
+# Dictionnaire des limites de tokens par modèle
+MODEL_MAX_TOKENS = {
+    "gpt-4.1": 32768,
+    "gpt-4.1-mini": 32768,
+    "gpt-4.1-nano": 32768,
+    "gpt-5": 128000,
+    "gpt-5-mini": 128000,
+    "gpt-5-nano": 128000,
+    "gpt-5-chat-latest": 128000,
+    "claude-sonnet-4-20250514": 64000,
+}
 
 
 # =============================================================================
@@ -186,7 +199,10 @@ with st.sidebar:
     
     # Paramètres de génération
     st.subheader("🎛️ Paramètres")
-    
+
+    # Récupérer la limite de tokens pour le modèle sélectionné
+    max_tokens_for_model = MODEL_MAX_TOKENS.get(selected_model, 4000)
+
     # Paramètres spécifiques pour GPT-5
     if selected_model.startswith("gpt-5"):
         st.markdown("### 🧠 Paramètres GPT-5")
@@ -242,10 +258,10 @@ with st.sidebar:
     max_tokens = st.slider(
         "Max Tokens",
         min_value=50,
-        max_value=4000,
-        value=manager.get_default_param('max_tokens') or 1000,
+        max_value=max_tokens_for_model,
+        value=max_tokens_for_model,
         step=50,
-        help="Longueur maximale de la réponse"
+        help="Longueur maximale de la réponse",
     )
     
     # Paramètres spécifiques pour Claude-sonnet-4
