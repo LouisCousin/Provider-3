@@ -59,19 +59,15 @@ class GPT5Provider(BaseProvider):
         # Initialiser les paramètres
         params = {}
         
-        # GPT-5 utilise directement 'max_tokens'
+        # GPT-5 utilise max_completion_tokens (comme GPT-4.1), pas max_tokens
         if 'max_tokens' in kwargs:
-            params['max_tokens'] = kwargs['max_tokens']
+            params['max_completion_tokens'] = kwargs['max_tokens']
         else:
-            params['max_tokens'] = self.default_params.get('max_tokens', 1000)
+            params['max_completion_tokens'] = self.default_params.get('max_tokens', 1000)
         
         # Ajouter les paramètres spécifiques à GPT-5
         params['reasoning_effort'] = kwargs.get('reasoning_effort', self.gpt5_defaults['reasoning_effort'])
         params['verbosity'] = kwargs.get('verbosity', self.gpt5_defaults['verbosity'])
-
-        # Forcer le raisonnement minimal pour gpt-5-nano
-        if self.model_name == 'gpt-5-nano':
-            params['reasoning_effort'] = 'minimal'
         
         # En mode minimal, on peut utiliser temperature et autres paramètres classiques
         if params['reasoning_effort'] == 'minimal':
@@ -120,13 +116,18 @@ class GPT5Provider(BaseProvider):
             
         except Exception as e:
             error_str = str(e)
-
+            
+            # Gérer les erreurs spécifiques
+            if "max_tokens" in error_str and "max_completion_tokens" in error_str:
+                # Cette erreur ne devrait plus arriver avec notre correction
+                raise APIError(f"Erreur de paramètre GPT-5: utilisez max_tokens dans l'appel, il sera converti en max_completion_tokens automatiquement")
+            
             # Si les paramètres reasoning_effort/verbosity ne sont pas supportés (fallback pour compatibilité)
             if "reasoning_effort" in error_str or "verbosity" in error_str:
                 # Certains modèles pourraient ne pas supporter ces paramètres
                 # Essayer sans ces paramètres
                 params_fallback = {
-                    'max_tokens': params.get('max_tokens', 1000)
+                    'max_completion_tokens': params.get('max_completion_tokens', 1000)
                 }
                 
                 # Si on était en mode minimal, ajouter les paramètres classiques
@@ -178,11 +179,15 @@ class GPT5Provider(BaseProvider):
             
         except Exception as e:
             error_str = str(e)
-
+            
+            # Gérer les erreurs de paramètres
+            if "max_tokens" in error_str and "max_completion_tokens" in error_str:
+                raise APIError(f"Erreur de paramètre GPT-5: utilisez max_tokens dans l'appel, il sera converti en max_completion_tokens automatiquement")
+            
             # Fallback sans paramètres GPT-5 si nécessaire
             if "reasoning_effort" in error_str or "verbosity" in error_str:
                 params_fallback = {
-                    'max_tokens': params.get('max_tokens', 1000)
+                    'max_completion_tokens': params.get('max_completion_tokens', 1000)
                 }
                 
                 # Si on était en mode minimal, ajouter les paramètres classiques
